@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  istio-resources:
+  - apiVersion: v2
+    appVersion: "1.0"
+    created: "2026-04-26T14:38:21.430770806Z"
+    description: A Helm chart to manage Istio resources (Gateway, VirtualService,
+      serviceentry, destinationrule, etc.)
+    digest: 9733c3ae46e4b24d970a9a14cc78abbc680b3da5727d113422bd7b6e4fdd1318
+    name: istio-resources
+    urls:
+    - https://github.com/mraops/istio-resources/releases/download/istio-resources-0.1.0/istio-resources-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-04-26T14:38:21.430775725Z"
