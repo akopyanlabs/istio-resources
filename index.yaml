@@ -1,6 +1,36 @@
 apiVersion: v1
 entries:
   istio-resources:
+  - annotations:
+      category: networking
+      licenses: Apache-2.0
+    apiVersion: v2
+    appVersion: "1.0"
+    created: "2026-08-03T09:47:21.708299952Z"
+    description: A Helm chart to manage Istio resources (Gateway, VirtualService,
+      ServiceEntry, DestinationRule, AuthorizationPolicy, etc.)
+    digest: cf612c1bc74c9b9a8e8276a8891be6103d6a0fc1d287f81744dd43bd991545f5
+    home: https://github.com/akopyanlabs/istio-resources
+    icon: https://istio.io/latest/favicons/android-192x192.png
+    keywords:
+    - istio
+    - service-mesh
+    - gateway
+    - virtualservice
+    - serviceentry
+    - destinationrule
+    - authorization
+    - security
+    - mtls
+    maintainers:
+    - name: Armen Akopyan
+    name: istio-resources
+    sources:
+    - https://github.com/akopyanlabs/istio-resources
+    type: application
+    urls:
+    - https://github.com/akopyanlabs/istio-resources/releases/download/istio-resources-0.1.1/istio-resources-0.1.1.tgz
+    version: 0.1.1
   - apiVersion: v2
     appVersion: "1.0"
     created: "2026-04-26T14:38:21.430770806Z"
@@ -11,4 +41,4 @@ entries:
     urls:
     - https://github.com/mraops/istio-resources/releases/download/istio-resources-0.1.0/istio-resources-0.1.0.tgz
     version: 0.1.0
-generated: "2026-04-26T14:38:21.430775725Z"
+generated: "2026-08-03T09:47:21.708306955Z"
