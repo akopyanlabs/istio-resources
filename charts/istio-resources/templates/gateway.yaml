@@ -1,22 +1,44 @@
-{{- if .Values.ingress.gateway }}
+{{- $ingress := .Values.ingress | default dict }}
+{{- range $ingress.gateways }}
+{{- $redirect := .redirectHttps }}
+---
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
-  name: {{ default .Release.Name .Values.ingress.name }}-gateway-{{ .Values.ingress.gateway.type }}
+  name: {{ default $.Release.Name $ingress.name }}-gateway-{{ .type }}
+  namespace: {{ default $.Release.Namespace $.Values.namespace }}
+  labels:
+    {{- include "istio-resources.labels" $ | nindent 4 }}
+  {{- with $.Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   selector:
-    app: {{ .Values.ingress.gateway.gateway_selector }}
+    app: {{ .gateway_selector }}
   servers:
-    {{- range .Values.ingress.gateway.ports }}
+    {{- range .ports }}
+    {{- if and $redirect (eq .protocol "HTTP") }}
+    {{/* HTTP → HTTPS redirect server */}}
     - port:
         number: {{ .number }}
         name: {{ .name }}
         protocol: {{ .protocol }}
-    {{- if .tls }}
+      hosts:
+        {{- toYaml $ingress.hosts | nindent 8 }}
+      tls:
+        httpsRedirect: true
+    {{- else }}
+    - port:
+        number: {{ .number }}
+        name: {{ .name }}
+        protocol: {{ .protocol }}
+      {{- if .tls }}
       tls:
         {{- toYaml .tls | nindent 8 }}
       {{- end }}
       hosts:
-        {{- toYaml $.Values.ingress.hosts | nindent 8 }}
+        {{- toYaml $ingress.hosts | nindent 8 }}
+    {{- end }}
     {{- end }}
 {{- end }}

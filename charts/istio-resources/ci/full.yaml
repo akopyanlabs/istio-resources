@@ -1,0 +1,99 @@
+# CI test values: enables every resource and feature for lint validation.
+commonLabels:
+  team: platform
+commonAnnotations:
+  managed-by: helm
+
+ingress:
+  name: git
+  hosts:
+    - git.example.com
+  gateways:
+    - type: external
+      gateway_selector: istio-ingress-gateway-external
+      redirectHttps: true
+      ports:
+        - number: 443
+          name: https
+          protocol: HTTPS
+          tls:
+            mode: SIMPLE
+        - number: 80
+          name: http
+          protocol: HTTP
+  virtualservice:
+    health:
+      enabled: true
+    http:
+      - match:
+          - uri:
+              prefix: /api
+        rewrite:
+          uri: /
+        route:
+          - destination:
+              host: api.default.svc.cluster.local
+              port:
+                number: 8080
+        timeout: 30s
+        retries:
+          attempts: 3
+          perTryTimeout: 5s
+      - route:
+          - destination:
+              host: httpbin.default.svc.cluster.local
+              port:
+                number: 3000
+
+egress:
+  - name: google
+    hosts:
+      - www.google.com
+    ports:
+      - number: 443
+        name: https
+        protocol: HTTPS
+    location: MESH_EXTERNAL
+    resolution: DNS
+
+destinationrule:
+  - name: my-service
+    host: my-service
+    trafficPolicy:
+      loadBalancer:
+        simple: RANDOM
+      outlierDetection:
+        consecutive5xxErrors: 5
+        interval: 30s
+      connectionPool:
+        tcp:
+          maxConnections: 100
+    subsets:
+      - name: v1
+        labels:
+          version: v1
+
+authorizationPolicy:
+  - name: allow-get
+    action: ALLOW
+    selector:
+      matchLabels:
+        app: httpbin
+    rules:
+      - to:
+          - operation:
+              methods: [GET]
+
+peerAuthentication:
+  - name: mesh-mtls
+    mtls:
+      mode: STRICT
+
+requestAuthentication:
+  - name: jwt-auth
+    selector:
+      matchLabels:
+        app: my-service
+    jwtRules:
+      - issuer: "https://idp.example.com"
+        jwksUri: "https://idp.example.com/.well-known/jwks.json"

@@ -6,8 +6,31 @@ on:
       - main
     paths:
       - "charts/**"
+      - ".github/workflows/**"
+
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: helm lint (default values)
+        run: helm lint charts/istio-resources
+
+      - name: helm lint (all resources enabled)
+        run: helm lint charts/istio-resources -f charts/istio-resources/ci/full.yaml
+
+      - name: helm template renders without error (default values)
+        run: helm template test charts/istio-resources > /dev/null
+
   release:
+    needs: lint
     permissions:
       contents: write
     runs-on: ubuntu-latest

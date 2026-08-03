@@ -1,0 +1,31 @@
+{{- range .Values.peerAuthentication }}
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: {{ default $.Release.Name .name }}
+  namespace: {{ default $.Release.Namespace $.Values.namespace }}
+  labels:
+    {{- include "istio-resources.labels" $ | nindent 4 }}
+  {{- with $.Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .selector }}
+  selector:
+    {{- toYaml .selector | nindent 4 }}
+  {{- end }}
+  {{- if .targetRefs }}
+  targetRefs:
+    {{- toYaml .targetRefs | nindent 4 }}
+  {{- end }}
+  {{- if .mtls }}
+  mtls:
+    {{- toYaml .mtls | nindent 4 }}
+  {{- end }}
+  {{- with .portLevelMtls }}
+  portLevelMtls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

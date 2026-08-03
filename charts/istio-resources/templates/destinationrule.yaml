@@ -1,16 +1,24 @@
-{{- if .Values.destinationrule }}
+{{- range .Values.destinationrule }}
+---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: {{ default .Release.Name .Values.destinationrule.name }}-destinationrule
+  name: {{ default $.Release.Name .name }}-destinationrule
+  namespace: {{ default $.Release.Namespace $.Values.namespace }}
+  labels:
+    {{- include "istio-resources.labels" $ | nindent 4 }}
+  {{- with $.Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
-  host: {{ .Values.destinationrule.host }}
-{{- if .Values.destinationrule.trafficPolicy }}
+  host: {{ .host }}
+{{- if .trafficPolicy }}
   trafficPolicy:
-    {{- toYaml .Values.destinationrule.trafficPolicy | nindent 4 }}
+    {{- toYaml .trafficPolicy | nindent 4 }}
 {{- end }}
-{{- if .Values.destinationrule.subsets }}
+{{- if .subsets }}
   subsets:
-    {{- toYaml .Values.destinationrule.subsets | nindent 4 }}
+    {{- toYaml .subsets | nindent 4 }}
 {{- end }}
 {{- end }}

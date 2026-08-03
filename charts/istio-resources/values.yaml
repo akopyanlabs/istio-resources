@@ -1,85 +1,201 @@
+# -- Override the chart name (used in resource names and labels).
+nameOverride: ""
+
+# -- Namespace for all rendered resources. Defaults to the release namespace.
+namespace: ""
+
+# -- Common labels added to every resource.
+commonLabels: {}
+  # team: platform
+  # env: prod
+
+# -- Common annotations added to every resource.
+commonAnnotations: {}
+  # managed-by: helm
+
+# =============================================================================
+# Ingress (Gateway + VirtualService)
+# =============================================================================
 ingress:
   # name: git
   # hosts:
   #   - git.some.domain
   #   - git.some2.domain
-  # gateway:
-  #   type: ingress
-  #   gateway_selector: "istio-ingress-gateway"
-  #   ports:
-  #     - number: 443
-  #       name: https
-  #       protocol: HTTP
-  #       tls:
-  #         mode: SIMPLE # enables HTTPS on this port
-  #         serverCertificate: /etc/certs/servercert.pem
-  #         privateKey: /etc/certs/privatekey.pem
-  #     - number: 80
-  #       name: http
-  #       protocol: HTTP
+  #
+  # # -- Cross-namespace reference: when set, VirtualService refers to the
+  # # created gateways as "<gatewayNamespace>/<name>-gateway-<type>".
+  # gatewayNamespace: ""
+  #
+  # gateways:
+  #   - type: external                         # type: used in gateway name and auto VS ref
+  #     gateway_selector: "istio-ingress-gateway-external"
+  #     redirectHttps: true                    # HTTP ports of THIS gateway become HTTPS redirects
+  #     ports:
+  #       - number: 443
+  #         name: https
+  #         protocol: HTTPS
+  #         tls:
+  #           mode: SIMPLE                     # enables HTTPS on this port
+  #           serverCertificate: /etc/certs/servercert.pem
+  #           privateKey: /etc/certs/privatekey.pem
+  #       - number: 80
+  #         name: http
+  #         protocol: HTTP
+  #   - type: internal
+  #     gateway_selector: "istio-ingress-gateway-internal"
+  #     ports:
+  #       - number: 80
+  #         name: http
+  #         protocol: HTTP
+  #
+  # virtualservice:
+  #   # -- Explicit gateway references. Used only when `ingress.gateways` is empty.
+  #   # gateways:
+  #   #   - istio-system/my-existing-gateway
+  #
+  #   # -- Health probe route injected as the first HTTP rule.
+  #   health:
+  #     enabled: true
+  #     host: istio-ingress-gateway            # destination host (default: istio-ingress-gateway)
+  #     port: 15021                            # destination port (default: 15021)
+  #
+  #   http:
+  #     - match:
+  #         - uri:
+  #             prefix: /api
+  #       rewrite:
+  #         uri: /
+  #       route:
+  #         - destination:
+  #             host: api.default.svc.cluster.local
+  #             port:
+  #               number: 8080
+  #       timeout: 30s
+  #       retries:
+  #         attempts: 3
+  #         perTryTimeout: 5s
+  #         retryOn: 5xx,reset
+  #       corsPolicy:
+  #         allowOrigins:
+  #           - exact: https://example.com
+  #         allowMethods: [GET, POST]
+  #     - route:
+  #         - destination:
+  #             host: httpbin.default.svc.cluster.local
+  #             port:
+  #               number: 3000
+  #
+  #   tcp:
+  #     - match:
+  #         - port: 27017
+  #       route:
+  #         - destination:
+  #             host: mongo.backup.svc.cluster.local
+  #             port:
+  #               number: 5555
 
-  virtualservice:
-    # gateways:
-    #   - istio-ingress-gateway
-    # http:
-    #   - match:
-    #       - uri:
-    #           prefix: /health
-    #     rewrite:
-    #       uri: /healthz/ready
-    #     route:
-    #       - destination:
-    #           host: istio-ingress-gateway
-    #           port:
-    #             number: 15021
-    #   - match:
-    #       - uri:
-    #           prefix: "/"
-    #     route:
-    #       - destination:
-    #           host: htpbin.default.svc.cluster.local
-    #           port:
-    #             number: 3000
-    # tcp:
-    # - match:
-    #   - port: 27017
-    #   route:
-    #   - destination:
-    #       host: mongo.backup.svc.cluster.local
-    #       port:
-    #         number: 5555
+# =============================================================================
+# Egress (ServiceEntry)
+# =============================================================================
+# egress:
+#   - name: google
+#     hosts:
+#       - www.google.com
+#       - google.ru
+#     ports:
+#       - number: 443
+#         name: https
+#         protocol: HTTPS
+#       - number: 80
+#         name: http
+#         protocol: HTTP
+#     location: MESH_EXTERNAL
+#     resolution: DNS
 
-egress:
-  # name: google
-  # hosts:
-  #   - www.google.com
-  #   - google.ru
-  # ports:
-  #   - number: 443
-  #     name: https
-  #     protocol: HTTP
-  #   - number: 80
-  #     name: http
-  #     protocol: HTTP
-  # location: MESH_EXTERNAL
-  # resolution: DNS
+# =============================================================================
+# DestinationRule
+# =============================================================================
+# destinationrule:
+#   - name: my-service
+#     host: my-service
+#     trafficPolicy:
+#       loadBalancer:
+#         simple: RANDOM
+#       outlierDetection:                      # circuit breaker: eject unhealthy pods
+#         consecutive5xxErrors: 5
+#         interval: 30s
+#         baseEjectionTime: 30s
+#       connectionPool:                        # TCP/HTTP pool tuning
+#         tcp:
+#           maxConnections: 100
+#         http:
+#           http1MaxPendingRequests: 10
+#     subsets:
+#       - name: v1
+#         labels:
+#           version: v1
+#       - name: v2
+#         labels:
+#           version: v2
+#         trafficPolicy:
+#           loadBalancer:
+#             simple: ROUND_ROBIN
 
-destinationrule:
-  # name: my-service
-  # host: my-service
-  # trafficPolicy:
-  #   loadBalancer:
-  #     simple: RANDOM
-  # subsets:
-  #   - name: v1
-  #     labels:
-  #       version: v1
-  #   - name: v2
-  #     labels:
-  #       version: v2
-  #     trafficPolicy:
-  #       loadBalancer:
-  #         simple: ROUND_ROBIN
-  #   - name: v3
-  #     labels:
-  #       version: v3
+# =============================================================================
+# Security: AuthorizationPolicy
+# =============================================================================
+# authorizationPolicy:
+#   - name: allow-nothing                      # deny-all by default
+#     spec: {}                                 # raw spec override (takes precedence)
+#
+#   - name: allow-get
+#     action: ALLOW
+#     selector:
+#       matchLabels:
+#         app: httpbin
+#     rules:
+#       - from:
+#           - source:
+#               principals: ["cluster.local/ns/default/sa/my-sa"]
+#         to:
+#           - operation:
+#               methods: [GET]
+#               paths: ["/api/*"]
+#
+#   - name: deny-admin                          # AuthorizationPolicy with targetRefs (Istio 1.22+)
+#     action: DENY
+#     targetRefs:
+#       - kind: Service
+#         name: my-service
+#         group: ""
+
+# =============================================================================
+# Security: PeerAuthentication (mTLS)
+# =============================================================================
+# peerAuthentication:
+#   - name: mesh-mtls
+#     mtls:
+#       mode: STRICT
+#   - name: per-port
+#     selector:
+#       matchLabels:
+#         app: my-service
+#     mtls:
+#       mode: PERMISSIVE
+#     portLevelMtls:
+#       8080:
+#         mode: DISABLE
+
+# =============================================================================
+# Security: RequestAuthentication (JWT)
+# =============================================================================
+# requestAuthentication:
+#   - name: jwt-auth
+#     selector:
+#       matchLabels:
+#         app: my-service
+#     jwtRules:
+#       - issuer: "https://my-idp.example.com"
+#         jwksUri: "https://my-idp.example.com/.well-known/jwks.json"
+#         audiences: ["my-app"]
+#         forwardOriginalToken: true

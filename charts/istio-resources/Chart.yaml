@@ -2,5 +2,11 @@ apiVersion: v2
 name: istio-resources
 description: A Helm chart to manage Istio resources (Gateway, VirtualService,
   serviceentry, destinationrule, etc.)
-version: 0.1.0
+version: 0.1.1
+keywords:
+  - istio
+  - gateway
+  - virtualservice
+  - serviceentry
+  - destinationrule
 appVersion: "1.0"

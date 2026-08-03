@@ -1,22 +1,29 @@
-{{- if .Values.egress }}
+{{- range .Values.egress }}
+---
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
-  name: {{ default .Release.Name .Values.egress.name }}-egress
+  name: {{ default $.Release.Name .name }}-egress
+  namespace: {{ default $.Release.Namespace $.Values.namespace }}
+  labels:
+    {{- include "istio-resources.labels" $ | nindent 4 }}
+  {{- with $.Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   hosts:
-    {{- toYaml .Values.egress.hosts | nindent 4 }}
+    {{- toYaml .hosts | nindent 4 }}
   ports:
-  {{- range .Values.egress.ports }}
-    - port:
-      number: {{ .number }}
+    {{- range .ports }}
+    - number: {{ .number }}
       name: {{ .name }}
       protocol: {{ .protocol }}
-  {{- end }}
-{{- if .Values.egress.location }}
-  location: {{ .Values.egress.location }}
-{{- end  }}
-{{- if .Values.egress.resolution }}
-  resolution: {{ .Values.egress.resolution }}
-{{- end  }}
+    {{- end }}
+{{- if .location }}
+  location: {{ .location }}
+{{- end }}
+{{- if .resolution }}
+  resolution: {{ .resolution }}
+{{- end }}
 {{- end }}
