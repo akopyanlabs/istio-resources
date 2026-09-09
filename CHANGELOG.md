@@ -1,7 +1,16 @@
 # Changelog
 
 All notable changes to this project are documented in this file.
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [0.2.0] - 2026-09-09
+
+### Added
+- **Egress gateway routing:** `egress[].gateways` list routes mesh traffic
+  through an Istio egress gateway (e.g. to `https://gitlab.com`). Presence of
+  the list (mirroring the ingress pattern) renders the egress `Gateway`
+  resources (`<name>-gateway-<type>`, TLS passthrough) plus a `VirtualService`:
+  mesh → egress GW → external host. Per-gateway `host`/`subset` overrides;
+  TCP and HTTP ports are routed per-port.
 
 ## [0.1.1] - 2026-08-03
 

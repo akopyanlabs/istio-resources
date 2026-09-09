@@ -1,0 +1,33 @@
+{{- range .Values.egress }}
+{{- $egress := . }}
+{{- range .gateways }}
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: {{ default $.Release.Name $egress.name }}-gateway-{{ .type }}
+  namespace: {{ default $.Release.Namespace $.Values.namespace }}
+  labels:
+    {{- include "istio-resources.labels" $ | nindent 4 }}
+  {{- with $.Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    app: {{ .gateway_selector }}
+  servers:
+    {{- range $egress.ports }}
+    - port:
+        number: {{ .number }}
+        name: {{ .name }}
+        protocol: {{ .protocol }}
+    {{- if ne .protocol "HTTP" }}
+      tls:
+        mode: PASSTHROUGH
+    {{- end }}
+      hosts:
+        {{- toYaml $egress.hosts | nindent 8 }}
+    {{- end }}
+{{- end }}
+{{- end }}

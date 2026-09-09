@@ -111,6 +111,24 @@ ingress:
 #         protocol: HTTP
 #     location: MESH_EXTERNAL
 #     resolution: DNS
+#
+#   # -- Route traffic through an Istio egress gateway (e.g. to gitlab.com).
+#   # Presence of `gateways` (like ingress) creates the egress Gateway resources
+#   # and a VirtualService: mesh -> egress GW -> external host (TLS passthrough).
+#   - name: gitlab
+#     hosts:
+#       - gitlab.com
+#     ports:
+#       - number: 443
+#         name: https
+#         protocol: TLS
+#     location: MESH_EXTERNAL
+#     resolution: DNS
+#     gateways:
+#       - type: egress                                # Gateway name: gitlab-gateway-egress
+#         gateway_selector: "istio-egressgateway"
+#         # host: istio-egressgateway.istio-system.svc.cluster.local  # egress GW svc (default)
+#         # subset: ""                                               # optional DR subset on the GW host
 
 # =============================================================================
 # DestinationRule

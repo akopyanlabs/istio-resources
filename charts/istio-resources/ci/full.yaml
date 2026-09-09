@@ -55,6 +55,18 @@ egress:
         protocol: HTTPS
     location: MESH_EXTERNAL
     resolution: DNS
+  - name: gitlab
+    hosts:
+      - gitlab.com
+    ports:
+      - number: 443
+        name: https
+        protocol: TLS
+    location: MESH_EXTERNAL
+    resolution: DNS
+    gateways:
+      - type: egress
+        gateway_selector: istio-egressgateway
 
 destinationrule:
   - name: my-service

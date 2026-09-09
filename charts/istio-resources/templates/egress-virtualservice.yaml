@@ -1,0 +1,93 @@
+{{- range .Values.egress }}
+{{- if .gateways }}
+{{- $egress := . }}
+{{- $name := .name }}
+{{- $firstGw := index .gateways 0 }}
+{{- $gwHost := default "istio-egressgateway.istio-system.svc.cluster.local" $firstGw.host }}
+{{- $hasHttp := false }}
+{{- $hasTcp := false }}
+{{- range .ports }}
+{{- if eq .protocol "HTTP" }}{{- $hasHttp = true }}{{- else }}{{- $hasTcp = true }}{{- end }}
+{{- end }}
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{ default $.Release.Name $name }}-egress-virtualservice
+  namespace: {{ default $.Release.Namespace $.Values.namespace }}
+  labels:
+    {{- include "istio-resources.labels" $ | nindent 4 }}
+  {{- with $.Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  hosts:
+    {{- toYaml $egress.hosts | nindent 4 }}
+  gateways:
+    - mesh
+    {{- range $egress.gateways }}
+    - {{ default $.Release.Name $name }}-gateway-{{ .type }}
+    {{- end }}
+{{- if $hasTcp }}
+  tcp:
+    {{- range $egress.ports }}
+    {{- if ne .protocol "HTTP" }}
+    - match:
+        - port: {{ .number }}
+          gateways:
+            - mesh
+      route:
+        - destination:
+            host: {{ $gwHost }}
+            {{- with $firstGw.subset }}
+            subset: {{ . }}
+            {{- end }}
+            port:
+              number: {{ .number }}
+    - match:
+        - port: {{ .number }}
+          gateways:
+            {{- range $egress.gateways }}
+            - {{ default $.Release.Name $name }}-gateway-{{ .type }}
+            {{- end }}
+      route:
+        - destination:
+            host: {{ index $egress.hosts 0 }}
+            port:
+              number: {{ .number }}
+    {{- end }}
+    {{- end }}
+{{- end }}
+{{- if $hasHttp }}
+  http:
+    {{- range $egress.ports }}
+    {{- if eq .protocol "HTTP" }}
+    - match:
+        - port: {{ .number }}
+          gateways:
+            - mesh
+      route:
+        - destination:
+            host: {{ $gwHost }}
+            {{- with $firstGw.subset }}
+            subset: {{ . }}
+            {{- end }}
+            port:
+              number: {{ .number }}
+    - match:
+        - port: {{ .number }}
+          gateways:
+            {{- range $egress.gateways }}
+            - {{ default $.Release.Name $name }}-gateway-{{ .type }}
+            {{- end }}
+      route:
+        - destination:
+            host: {{ index $egress.hosts 0 }}
+            port:
+              number: {{ .number }}
+    {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

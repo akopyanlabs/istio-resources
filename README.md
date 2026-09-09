@@ -13,7 +13,7 @@ don't hand-write boilerplate per project.
 |---|---|---|
 | `Gateway` | `ingress.gateways[]` | One or more gateways (e.g. external + internal) |
 | `VirtualService` | `ingress.virtualservice` | Routes; optional built-in health probe, retries, timeout, CORS |
-| `ServiceEntry` | `egress[]` | List of external/mesh service entries |
+| `ServiceEntry` | `egress[]` | List of external/mesh service entries; optional egress-gateway routing |
 | `DestinationRule` | `destinationrule[]` | Load balancing, subsets, outlier detection, connection pools |
 | `AuthorizationPolicy` | `authorizationPolicy[]` | ALLOW/DENY rules; selector or targetRefs |
 | `PeerAuthentication` | `peerAuthentication[]` | mTLS mode (STRICT/PERMISSIVE), port-level overrides |
@@ -72,6 +72,37 @@ routing to the ingress gateway's health endpoint by default. Override
 When `ingress.gatewayNamespace` is set, the VirtualService references the
 created gateways as `<gatewayNamespace>/<name>-gateway-<type>` (Istio's
 required format for cross-namespace refs). Omit it for same-namespace refs.
+
+### Egress gateway routing
+Route mesh traffic to an external host through an Istio egress gateway.
+The pattern mirrors ingress: **presence of `gateways`** creates the resources —
+no separate enable flags.
+
+```yaml
+egress:
+  - name: gitlab
+    hosts:
+      - gitlab.com
+    ports:
+      - number: 443
+        name: https
+        protocol: TLS
+    location: MESH_EXTERNAL
+    resolution: DNS
+    gateways:
+      - type: egress                       # Gateway: gitlab-gateway-egress
+        gateway_selector: istio-egressgateway
+```
+
+This renders, alongside the `ServiceEntry`, the egress `Gateway`
+(`<name>-gateway-<type>`, servers generated from the entry's ports/hosts, TLS
+passthrough for non-HTTP ports) and a `VirtualService` with two rules:
+mesh → egress gateway, and egress gateway → external host.
+
+Per-gateway options:
+- `host` — egress gateway service host to route traffic to
+  (default `istio-egressgateway.istio-system.svc.cluster.local`)
+- `subset` — route to a DestinationRule subset on the gateway host
 
 ### List-valued resources
 `egress`, `destinationrule`, `authorizationPolicy`, `peerAuthentication`, and
