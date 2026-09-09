@@ -12,6 +12,16 @@ All notable changes to this project are documented in this file.
   mesh → egress GW → external host. Per-gateway `host`/`subset` overrides;
   TCP and HTTP ports are routed per-port.
 
+## [0.2.1] - 2026-09-09
+
+### Fixed
+- **Egress VirtualService for TLS ports:** generate `tls:` rules with
+  `sniHosts` (SNI-matched) instead of `tcp:` port-matched rules. Sidecars
+  route external TLS traffic by SNI, so the previous `tcp` rules were never
+  applied and traffic bypassed the egress gateway. Verified in-cluster:
+  pod → egress gateway → gitlab.com. `tcp:` rules are still emitted for
+  plain TCP ports; `http:` for HTTP ports.
+
 ## [0.1.1] - 2026-08-03
 
 ### Added

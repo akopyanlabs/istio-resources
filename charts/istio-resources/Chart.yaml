@@ -3,7 +3,7 @@ name: istio-resources
 description: A Helm chart to manage Istio resources (Gateway, VirtualService,
   ServiceEntry, DestinationRule, AuthorizationPolicy, etc.)
 type: application
-version: 0.2.0
+version: 0.2.1
 appVersion: "1.0"
 home: https://github.com/akopyanlabs/istio-resources
 sources:
