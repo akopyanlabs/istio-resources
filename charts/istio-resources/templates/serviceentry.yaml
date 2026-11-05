@@ -26,4 +26,8 @@ spec:
 {{- if .resolution }}
   resolution: {{ .resolution }}
 {{- end }}
+{{- with .exportTo }}
+  exportTo:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
 {{- end }}

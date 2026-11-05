@@ -111,10 +111,13 @@ ingress:
 #         protocol: HTTP
 #     location: MESH_EXTERNAL
 #     resolution: DNS
+#     exportTo: ["."]                              # limit visibility to this namespace only (cluster-wide if unset)
 #
 #   # -- Route traffic through an Istio egress gateway (e.g. to gitlab.com).
 #   # Presence of `gateways` (like ingress) creates the egress Gateway resources
 #   # and a VirtualService: mesh -> egress GW -> external host (TLS passthrough).
+#   # Port protocols: HTTP/HTTP2/GRPC/GRPC-Web -> http routes, TLS/HTTPS ->
+#   # SNI-matched passthrough, TCP/MONGO/... -> plain tcp rules.
 #   - name: gitlab
 #     hosts:
 #       - gitlab.com
@@ -217,3 +220,28 @@ ingress:
 #         jwksUri: "https://my-idp.example.com/.well-known/jwks.json"
 #         audiences: ["my-app"]
 #         forwardOriginalToken: true
+
+# =============================================================================
+# Sidecar: scope outbound traffic per workload / namespace
+# =============================================================================
+# Restrict which hosts a workload's proxy can reach. Without `workloadSelector`
+# the rule applies to every sidecar in the namespace. Host format is
+# "<namespace>/<fqdn>"; "./*" = own namespace, "istio-system/*" = control plane.
+# sidecars:
+#   - name: allow-gitlab-only
+#     workloadSelector:                        # omit to apply to the whole namespace
+#       matchLabels:
+#         app: egress-test
+#     egress:
+#       hosts:
+#         - "./*"                              # services in the same namespace
+#         - "istio-system/*"                   # control plane (required for normal operation)
+#         - "./gitlab.com"                     # external host via the local ServiceEntry
+#     outboundTrafficPolicy:
+#       mode: REGISTRY_ONLY                    # block direct (non-mesh) egress by IP/DNS
+#
+#   - name: namespace-default                  # namespace-wide default egress scope
+#     egress:
+#       hosts:
+#         - "./*"
+#         - "istio-system/*"

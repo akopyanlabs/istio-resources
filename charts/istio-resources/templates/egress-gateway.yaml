@@ -22,7 +22,7 @@ spec:
         number: {{ .number }}
         name: {{ .name }}
         protocol: {{ .protocol }}
-    {{- if ne .protocol "HTTP" }}
+    {{- if or (eq .protocol "TLS") (eq .protocol "HTTPS") }}
       tls:
         mode: PASSTHROUGH
     {{- end }}

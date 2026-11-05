@@ -18,6 +18,7 @@ don't hand-write boilerplate per project.
 | `AuthorizationPolicy` | `authorizationPolicy[]` | ALLOW/DENY rules; selector or targetRefs |
 | `PeerAuthentication` | `peerAuthentication[]` | mTLS mode (STRICT/PERMISSIVE), port-level overrides |
 | `RequestAuthentication` | `requestAuthentication[]` | JWT validation rules |
+| `Sidecar` | `sidecars[]` | Per-workload/namespace outbound traffic scoping |
 
 ## Quick start
 
@@ -95,14 +96,48 @@ egress:
 ```
 
 This renders, alongside the `ServiceEntry`, the egress `Gateway`
-(`<name>-gateway-<type>`, servers generated from the entry's ports/hosts, TLS
-passthrough for non-HTTP ports) and a `VirtualService` with two rules:
-mesh → egress gateway, and egress gateway → external host.
+(`<name>-gateway-<type>`, servers generated from the entry's ports/hosts) and a
+`VirtualService` with two rules: mesh → egress gateway, and egress gateway →
+external host.
+
+Ports are routed by protocol family (Istio protocol selection):
+- `HTTP`, `HTTP2`, `GRPC`, `GRPC-Web` → `http` rules
+- `TLS`, `HTTPS` → SNI-matched `tls` passthrough rules (required for gateway
+  routing to apply)
+- `TCP`, `MONGO`, ... → plain `tcp` rules; the gateway server gets no TLS
+  settings (a `tls.mode: PASSTHROUGH` on an opaque TCP port is invalid)
 
 Per-gateway options:
 - `host` — egress gateway service host to route traffic to
   (default `istio-egressgateway.istio-system.svc.cluster.local`)
 - `subset` — route to a DestinationRule subset on the gateway host
+
+Set `egress[].exportTo: ["."]` to keep the `ServiceEntry` visible only in its
+own namespace (default: exported to the whole mesh).
+
+### Egress scoping with Sidecar
+`ServiceEntry` resources are visible mesh-wide by default. To restrict egress
+to specific workloads, add a `Sidecar` with a `workloadSelector`:
+
+```yaml
+sidecars:
+  - name: allow-gitlab-only
+    workloadSelector:              # omit to apply to the whole namespace
+      matchLabels:
+        app: egress-test
+    egress:
+      hosts:
+        - "./*"                    # same-namespace services
+        - "istio-system/*"         # control plane
+        - "./gitlab.com"           # external host via the local ServiceEntry
+    outboundTrafficPolicy:
+      mode: REGISTRY_ONLY          # block direct (non-mesh) egress by IP/DNS
+```
+
+`workloadSelector` scopes the rule to matching pods in the resource's
+namespace; without it the rule becomes the namespace-wide default. Hosts use
+Istio's `<namespace>/<fqdn>` format. `REGISTRY_ONLY` makes the proxy drop any
+destination not present in the registry, so traffic cannot bypass the mesh.
 
 ### List-valued resources
 `egress`, `destinationrule`, `authorizationPolicy`, `peerAuthentication`, and
@@ -138,6 +173,8 @@ Every resource gets Helm recommended labels (`app.kubernetes.io/*`,
 | `authorizationPolicy[]` | list | `[]` | AuthorizationPolicy definitions |
 | `peerAuthentication[]` | list | `[]` | PeerAuthentication definitions |
 | `requestAuthentication[]` | list | `[]` | RequestAuthentication definitions |
+| `sidecars[]` | list | `[]` | Sidecar definitions (workloadSelector, egress.hosts, outboundTrafficPolicy) |
+| `egress[].exportTo` | list | unset | Restrict ServiceEntry visibility (`["."]` = own namespace) |
 
 See [`charts/istio-resources/values.yaml`](charts/istio-resources/values.yaml)
 for fully commented examples of every resource.

@@ -8,7 +8,7 @@
 {{- $hasTls := false }}
 {{- $hasTcp := false }}
 {{- range .ports }}
-{{- if eq .protocol "HTTP" }}{{- $hasHttp = true }}{{- else if or (eq .protocol "TLS") (eq .protocol "HTTPS") }}{{- $hasTls = true }}{{- else }}{{- $hasTcp = true }}{{- end }}
+{{- if or (eq .protocol "HTTP") (eq .protocol "HTTP2") (eq .protocol "GRPC") (eq .protocol "GRPC-Web") }}{{- $hasHttp = true }}{{- else if or (eq .protocol "TLS") (eq .protocol "HTTPS") }}{{- $hasTls = true }}{{- else }}{{- $hasTcp = true }}{{- end }}
 {{- end }}
 ---
 apiVersion: networking.istio.io/v1alpha3
@@ -68,7 +68,7 @@ spec:
 {{- if $hasTcp }}
   tcp:
     {{- range $egress.ports }}
-    {{- if ne .protocol "HTTP" }}{{- if ne .protocol "TLS" }}{{- if ne .protocol "HTTPS" }}
+    {{- if ne .protocol "HTTP" }}{{- if ne .protocol "HTTP2" }}{{- if ne .protocol "GRPC" }}{{- if ne .protocol "GRPC-Web" }}{{- if ne .protocol "TLS" }}{{- if ne .protocol "HTTPS" }}
     - match:
         - port: {{ .number }}
           gateways:
@@ -92,13 +92,13 @@ spec:
             host: {{ index $egress.hosts 0 }}
             port:
               number: {{ .number }}
-    {{- end }}{{- end }}{{- end }}
+    {{- end }}{{- end }}{{- end }}{{- end }}{{- end }}{{- end }}
     {{- end }}
 {{- end }}
 {{- if $hasHttp }}
   http:
     {{- range $egress.ports }}
-    {{- if eq .protocol "HTTP" }}
+    {{- if or (eq .protocol "HTTP") (eq .protocol "HTTP2") (eq .protocol "GRPC") (eq .protocol "GRPC-Web") }}
     - match:
         - port: {{ .number }}
           gateways:

@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.0] - 2026-11-05
+
+### Added
+- **`Sidecar` resource** (`sidecars[]`): scope outbound traffic per workload
+  (`workloadSelector`) or namespace-wide, with `egress.hosts` and
+  `outboundTrafficPolicy` (e.g. `REGISTRY_ONLY` to block non-mesh egress).
+- **`exportTo` for `egress[]`**: limit ServiceEntry visibility to a namespace
+  (`["."]`) instead of exporting mesh-wide.
+
+### Fixed
+- Egress gateway servers no longer get `tls.mode: PASSTHROUGH` on plain TCP
+  (and other opaque) ports; passthrough is added only for `TLS`/`HTTPS`.
+- Egress VirtualService routes by protocol family: `HTTP`/`HTTP2`/`GRPC`/
+  `GRPC-Web` ports produce `http` rules (previously `HTTP2`/`GRPC`/`GRPC-Web`
+  produced `tcp` rules); `TLS`/`HTTPS` → `tls` with `sniHosts`; everything
+  else → `tcp`. Ports no longer land in two sections at once.
+
 ## [0.2.0] - 2026-09-09
 
 ### Added

@@ -62,8 +62,12 @@ egress:
       - number: 443
         name: https
         protocol: TLS
+      - number: 22
+        name: ssh
+        protocol: TCP
     location: MESH_EXTERNAL
     resolution: DNS
+    exportTo: ["."]
     gateways:
       - type: egress
         gateway_selector: istio-egressgateway
@@ -109,3 +113,16 @@ requestAuthentication:
     jwtRules:
       - issuer: "https://idp.example.com"
         jwksUri: "https://idp.example.com/.well-known/jwks.json"
+
+sidecars:
+  - name: allow-gitlab-only
+    workloadSelector:
+      matchLabels:
+        app: egress-test
+    egress:
+      hosts:
+        - "./*"
+        - "istio-system/*"
+        - "./gitlab.com"
+    outboundTrafficPolicy:
+      mode: REGISTRY_ONLY
